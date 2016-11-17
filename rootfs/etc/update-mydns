@@ -1,0 +1,38 @@
+#!/bin/sh
+
+conf=/ext/mydns.conf
+host=www.mydns.jp
+
+while read -r domain id pwd addr4 addr6
+do
+    [[ -n "$pwd" ]] || continue
+    echo "$domain" | grep -q '^#' && continue
+
+    addr4="${addr4#-}"
+    addr6="${addr6#-}"
+
+    if [[ -z "$addr4$addr6" ]]; then
+        req="
+            GET /login.html HTTP/1.0
+            Host: $host
+            Authorization: Basic $(echo -n "$id:$pwd" | base64)
+        "
+    else
+        body="MID=$id&PWD=$pwd"
+        [[ -n "$addr4" ]] && body="$body&IPV4ADDR=$addr4"
+        [[ -n "$addr6" ]] && body="$body&IPV6ADDR=$addr6"
+        req="
+            POST /directip.html HTTP/1.0
+            Host: $host
+            Content-Type: application/x-www-form-urlencoded
+            Content-Length: $(echo -n $body | wc -c)
+
+            $body
+        "
+    fi
+
+    send=`echo "$req" | sed 's/^ *//' | tr '\n' '~' | sed 's/^~//' | sed 's/~/\\\r\\\n/g'`
+    stat=`echo -ne $send | nc -w 3 $host 80 | grep '^login_status =' | egrep -o '[-0-9]+'`
+    echo -e "$stat\t$domain\t$id\t${addr4:--}\t${addr6:--}"
+
+done < $conf
