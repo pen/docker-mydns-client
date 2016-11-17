@@ -1,1 +1,1 @@
-*/15 * * * * /etc/update-mydns
+*/15 * * * * sleep $(($RANDOM % (5 * 60))); /etc/update-mydns
