@@ -31,8 +31,9 @@ do
         "
     fi
 
+    time=`date +'%Y-%m-%d %H:%M:%S'`
     send=`echo "$req" | sed 's/^ *//' | tr '\n' '~' | sed 's/^~//' | sed 's/~/\\\r\\\n/g'`
     stat=`echo -ne $send | nc -w 3 $host 80 | grep '^login_status =' | egrep -o '[-0-9]+'`
-    echo -e "$stat\t$domain\t$id\t${addr4:--}\t${addr6:--}"
+    echo -e "$time\t${stat:--}\t$domain\t$id\t${addr4:--}\t${addr6:--}"
 
 done < $conf
